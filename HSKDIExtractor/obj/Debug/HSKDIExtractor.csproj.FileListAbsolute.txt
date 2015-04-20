@@ -1,0 +1,14 @@
+C:\Documents and Settings\israelc\My Documents\My Dropbox\Programming Projects\HSKDIExtractor\HSKDIExtractor\bin\Debug\HSKDIExtractor.dll
+C:\Documents and Settings\israelc\My Documents\My Dropbox\Programming Projects\HSKDIExtractor\HSKDIExtractor\bin\Debug\HSKDIExtractor.pdb
+C:\Documents and Settings\israelc\My Documents\My Dropbox\Programming Projects\HSKDIExtractor\HSKDIExtractor\obj\Debug\ResolveAssemblyReference.cache
+C:\Documents and Settings\israelc\My Documents\My Dropbox\Programming Projects\HSKDIExtractor\HSKDIExtractor\obj\Debug\HSKDIExtractor.dll
+C:\Documents and Settings\israelc\My Documents\My Dropbox\Programming Projects\HSKDIExtractor\HSKDIExtractor\obj\Debug\HSKDIExtractor.pdb
+C:\Documents and Settings\israelc\My Documents\My Dropbox\Programming Projects\HSKDIExtractor\HSKDIExtractor\bin\Debug\CarlosAg.ExcelXmlWriter.dll
+C:\Documents and Settings\israelc\My Documents\My Dropbox\Programming Projects\HSKDIExtractor\HSKDIExtractor\obj\Debug\HSKDIExtractor.g.resources
+C:\Users\israelc\Dropbox\Programming Projects\HSKDIExtractor\HSKDIExtractor\obj\Debug\HSKDIExtractor.csprojResolveAssemblyReference.cache
+C:\Users\israelc\Dropbox\Programming Projects\HSKDIExtractor\HSKDIExtractor\obj\Debug\HSKDIExtractor.csproj.ResolveComReference.cache
+C:\Users\israelc\Dropbox\Programming Projects\HSKDIExtractor\HSKDIExtractor\obj\Debug\HSKDIExtractor.g.resources
+C:\Users\israelc\Dropbox\Programming Projects\HSKDIExtractor\HSKDIExtractor\obj\Debug\HSKDIExtractor.dll
+C:\Users\israelc\Dropbox\Programming Projects\HSKDIExtractor\HSKDIExtractor\bin\Debug\HSKDIExtractor.dll
+C:\Users\israelc\Dropbox\Programming Projects\HSKDIExtractor\HSKDIExtractor\bin\Debug\HSKDIExtractor.pdb
+C:\Users\israelc\Dropbox\Programming Projects\HSKDIExtractor\HSKDIExtractor\obj\Debug\HSKDIExtractor.pdb
