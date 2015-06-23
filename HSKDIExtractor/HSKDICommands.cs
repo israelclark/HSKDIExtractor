@@ -48,27 +48,88 @@ namespace HSKDICommands
 
                 BlockTable bt = (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead);
                 BlockTableRecord ms = (BlockTableRecord)tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForRead);
-                // Create block selector
+                // Create block selector                
+                                
+                PromptEntityOptions peo = new PromptEntityOptions("\nSelect an object on desired Layer or <Filter by Area>.");
+                peo.Keywords.Add("Filter");                
+                peo.SetRejectMessage("\nObject Selection Failed. Select an object on desired Layer.");                
 
-                PromptEntityOptions peo = new PromptEntityOptions("\nSelect an object on desired Layer.");
-                peo.SetRejectMessage("\nObject Selection Failed. Select an object on desired Layer.");
+                PromptSelectionOptions pso = new PromptSelectionOptions();                
+                pso.MessageForAdding = "\nHighlighted Objects will be included. Select individual objects or filtering area limits.";
+                pso.MessageForRemoval = "\nObject removed. Select individual objects or filtering area limits.";
+
+                //PromptPointOptions ppo = new PromptPointOptions("\nSelect first point in window or <End>. ");
+                //ppo.Keywords.Add("End");
+
+                //PromptPointResult ppr = null;
+                
+
+                PromptSelectionResult psr = null;                
+                ObjectIdCollection objsInWindow = new ObjectIdCollection();
+                
                 do
-                {
+                {                    
                     per = ed.GetEntity(peo);
+                    psr = null;
+
+                    if (per.Status == PromptStatus.Keyword && per.StringResult == "Filter")
+                    {
+                        peo.Message = "\nSelect an object on next desired Layer or press <Enter> when done.";
+                        peo.Keywords.Clear();
+                        //Point3dCollection pts = new Point3dCollection();
+
+                        //do
+                        //{
+                        //    ppr = ed.GetPoint(ppo);
+                        //    pts.Add(ppr.Value);
+                        //    ppo.BasePoint = pts[pts.Count - 1];
+                        //    ppo.UseDashedLine = true;
+                        //    ppo.UseBasePoint = true;
+
+                        //    ppo.Message = "\nSelect Next point.";
+                        //    if (pts.Count >= 2) ppo.Message = "\nSelect Next point or <End> to close selection area.";
+                        
+                        //    if (ppr.Status == PromptStatus.OK)
+                        //    {
+                        //        pts.Add(ppr.Value);
+                        //    }
+
+                        //    if (ppr.Status == PromptStatus.Keyword)
+                        //    {
+                        //        break;
+                        //    }
+                            
+                        //} while (ppr.Status == PromptStatus.OK && pts.Count < 3);
+
+                        //if (pts.Contains(new Point3d(0, 0, 0))) pts.Remove(new Point3d(0, 0, 0));
+
+                        //psr = ed.SelectWindow(pts[0], pts[3]);
+                        psr = ed.GetSelection(pso);
+                        SelectionSet selSet = psr.Value;                        
+
+                        foreach (SelectedObject sel in selSet)
+                        {
+                            objsInWindow.Add(sel.ObjectId);
+                        }
+                        ed.WriteMessage("\nFilter Added.");                        
+                    }
+
                     if (per.Status == PromptStatus.OK && per.ObjectId != null)
                     {
+                        peo.Message = "\nSelect an object on next desired Layer or press <Enter> when done.";
+                        peo.Keywords.Clear();                        
                         Entity ent = (Entity)tr.GetObject(per.ObjectId, OpenMode.ForRead);
                         if (ent.ObjectId != null)
                         {
                             string entType = ent.GetType().ToString().Split('.')[ent.GetType().ToString().Split('.').Length - 1];
                             if (!layerNames.Contains(ent.Layer.ToString())) layerNames.Add(ent.Layer.ToString());
-                            string message = "\n" + entType + " added on Layer " + ent.Layer.ToString() 
+                            string message = "\n\t" + entType + " added on Layer " + ent.Layer.ToString() 
                                            + ". Select an object on next desired Layer or press <Enter> when done.";
                             peo.Message = message;
                         }
                     }
                     
-                } while (per.Status == PromptStatus.OK);
+                } while (per.Status == PromptStatus.OK || psr != null);
 
                 ObjectIdCollection entsOnLayers = new ObjectIdCollection();
 
@@ -79,6 +140,16 @@ namespace HSKDICommands
                     {
                         entsOnLayers.Add(ent);
                     }
+                }
+                ObjectIdCollection entsInAreaOnLayers = new ObjectIdCollection();
+
+                if (objsInWindow.Count > 0)
+                {
+                    foreach(ObjectId myEnt in entsOnLayers)
+                    {
+                        if (objsInWindow.Contains(myEnt)) entsInAreaOnLayers.Add(myEnt);
+                    }
+                    entsOnLayers = entsInAreaOnLayers;
                 }
 
                 List<NewTableRow> tableRows = new List<NewTableRow>();
@@ -203,8 +274,11 @@ namespace HSKDICommands
                     }
                 }
 
-                // now that we have all the table rows, export them
-                ExportSpreadsheet(tableRows);
+                if (entsOnLayers.Count > 0)
+                {
+                    // now that we have all the table rows, export them
+                    ExportSpreadsheet(tableRows);
+                }
             }
         }
 
