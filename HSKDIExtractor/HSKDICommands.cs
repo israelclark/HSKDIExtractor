@@ -166,6 +166,7 @@ namespace HSKDICommands
                     TypedValue[] xData = null;
                     List<double> coords = new List<double>();
                     string txt = null;
+                    string pattern = null;
 
                     switch (entType)
                     {
@@ -180,6 +181,26 @@ namespace HSKDICommands
                             Autodesk.AutoCAD.DatabaseServices.Line l = ent as Autodesk.AutoCAD.DatabaseServices.Line;
                             length = l.Length;
                             layer = l.Layer.ToString();
+                            //xData = l.XData.AsArray();
+                            break;
+                        case "Circle":
+                            Autodesk.AutoCAD.DatabaseServices.Circle c = ent as Autodesk.AutoCAD.DatabaseServices.Circle;
+                            length = c.Circumference;
+                            area = c.Area;
+                            layer = c.Layer.ToString();
+                            //xData = l.XData.AsArray();
+                            break;
+                        case "Ellipse":
+                            Autodesk.AutoCAD.DatabaseServices.Ellipse e = ent as Autodesk.AutoCAD.DatabaseServices.Ellipse;                            
+                            area = e.Area;                            
+                            layer = e.Layer.ToString();
+                            //xData = l.XData.AsArray();
+                            break;
+                        case "Hatch":
+                            Autodesk.AutoCAD.DatabaseServices.Hatch h = ent as Autodesk.AutoCAD.DatabaseServices.Hatch;
+                            area = h.Area;
+                            layer = h.Layer.ToString();
+                            pattern = h.PatternName;
                             //xData = l.XData.AsArray();
                             break;
                         case "BlockReference":
@@ -221,13 +242,23 @@ namespace HSKDICommands
                             txt = mtext.Text;
                             //xData = mtext.XData.AsArray();
                             break;
+                        case "MLeader":
+                            MLeader ml = ent as MLeader;
+                            layer = ml.Layer.ToString();
+                            //blkName = ml.BlockName;                            
+                            coords.Add(Math.Round(ml.MText.Location.X));
+                            coords.Add(Math.Round(ml.MText.Location.Y));
+                            coords.Add(Math.Round(ml.MText.Location.Z));
+                            txt = ml.MText.Text;
+                            //xData = mtext.XData.AsArray();
+                            break;
                         default:
                             //uncatigorized. Send only type & Layer
                             layer = ent.Layer.ToString();
                             break;
                     }
 
-                    NewTableRow tableRow = new NewTableRow(layer, entType, area, length, coords, blkName, attTags, attTexts, txt, xData);
+                    NewTableRow tableRow = new NewTableRow(layer, entType, area, length, coords, blkName, attTags, attTexts, txt, xData, pattern);
                     int i;
                     switch (entType)
                     {
@@ -260,6 +291,49 @@ namespace HSKDICommands
                                 if (tableRow.length > 0) tableRows[i].length += tableRow.length;
                             }
                             break;
+                        case "Circle":
+                            i = tableRows.FindIndex(delegate(NewTableRow t)
+                            {
+                                return t.layer == ent.Layer && t.entType == "Circle";
+                            });
+                            if (i == -1)
+                            {
+                                tableRows.Add(tableRow);
+                            }
+                            else
+                            {
+                                if (tableRow.area > 0) tableRows[i].area += tableRow.area;
+                                if (tableRow.length > 0) tableRows[i].length += tableRow.length;
+                            }
+                            break;
+                        case "Ellipse":
+                            i = tableRows.FindIndex(delegate(NewTableRow t)
+                            {
+                                return t.layer == ent.Layer && t.entType == "Ellipse";
+                            });
+                            if (i == -1)
+                            {
+                                tableRows.Add(tableRow);
+                            }
+                            else
+                            {
+                                if (tableRow.area > 0) tableRows[i].area += tableRow.area;                                
+                            }
+                            break;
+                        case "Hatch":
+                            i = tableRows.FindIndex(delegate(NewTableRow t)
+                            {
+                                return t.layer == ent.Layer && t.entType == "Hatch" && t.pattern == pattern;
+                            });
+                            if (i == -1)
+                            {
+                                tableRows.Add(tableRow);
+                            }
+                            else
+                            {
+                                if (tableRow.area > 0) tableRows[i].area += tableRow.area;                                
+                            }
+                            break;
                         case "BlockReference":
                             tableRows.Add(tableRow);
                             break;
@@ -267,6 +341,9 @@ namespace HSKDICommands
                             tableRows.Add(tableRow);
                             break;
                         case "MText":
+                            tableRows.Add(tableRow);
+                            break;
+                        case "MLeader":
                             tableRows.Add(tableRow);
                             break;
                         default:
@@ -325,6 +402,10 @@ namespace HSKDICommands
                 {
                     columnNames.Add("Text");
                 }
+                if (rows.Exists(delegate(NewTableRow row) { return row.pattern != null ? true : false; }))
+                {
+                    columnNames.Add("Pattern");
+                }
                 if (rows.Exists(delegate(NewTableRow row) { return row.blkName != null ? true : false; }))
                 {
                     columnNames.Add("Block Name");
@@ -340,23 +421,66 @@ namespace HSKDICommands
                 for (i = 0; i < rows.Count; i++)
                 {
                     List<string> row = new List<string>();
-                    
                     row.Add(rows[i].layer);
                     row.Add(rows[i].entType);
-                    row.Add((rows[i].area > 0) ? Math.Round(rows[i].area).ToString() : "");
-                    row.Add((rows[i].length > 0) ? Math.Round(rows[i].length).ToString() : "");
-                    if (rows[i].coords.Count > 0)
-                        row.Add("("
-                            + rows[i].coords[0].ToString() + ", "
-                            + rows[i].coords[1].ToString() + ", "
-                            + rows[i].coords[2].ToString() + ")");                    
-                    row.Add((rows[i].txt != "") ? rows[i].txt : "");
-                    row.Add((rows[i].blkName != "") ? rows[i].blkName : "");                 
-                    for (int n = 0; n < rows[i].attTags.Count; n++)
+                    if (columnNames.Contains("Area(s)"))
                     {
-                        row.Add(rows[i].attTags[n] + ":");
-                        row.Add(rows[i].attTexts[n]);
+                        if (rows[i].area.HasValue)                        
+                            row.Add(Math.Round((decimal)rows[i].area, 2).ToString());
+                        else
+                            row.Add("");
                     }
+
+                    if (columnNames.Contains("Length(s)"))
+                    {
+                        if (rows[i].length != null)
+                            row.Add(Math.Round((decimal)rows[i].length, 2).ToString());
+                        else
+                            row.Add("");
+                    }
+
+                    if (columnNames.Contains("Coordinates"))
+                    {
+                        if (rows[i].coords.Count > 0)
+                            row.Add("("
+                                + rows[i].coords[0].ToString() + ", "
+                                + rows[i].coords[1].ToString() + ", "
+                                + rows[i].coords[2].ToString() + ")");
+                        else
+                            row.Add("");
+                    }
+
+                    if (columnNames.Contains("Text"))
+                    {
+                        if (rows[i].txt != null)
+                            row.Add(rows[i].txt);
+                        else
+                            row.Add("");
+                    }
+
+                    if (columnNames.Contains("Pattern"))
+                    {
+                        if (rows[i].pattern != null)
+                            row.Add(rows[i].pattern);
+                        else
+                            row.Add("");
+                    }                    
+
+                    if (columnNames.Contains("Block Name"))
+                    {
+                        if (rows[i].blkName != null)
+                        {
+                            row.Add(rows[i].blkName);
+                            for (int n = 0; n < rows[i].attTags.Count; n++)
+                            {
+                                row.Add(rows[i].attTags[n] + ":");
+                                row.Add(rows[i].attVals[n]);
+                            }
+                        }                         
+                        else
+                            row.Add("");
+                    }                    
+                    
                     data[i] = row.ToArray();
                 }
 
@@ -365,18 +489,26 @@ namespace HSKDICommands
                 Excel.Workbook workbook = (Excel.Workbook)(workbooks.Add(1));
                 Excel.Worksheet worksheet = (Excel.Worksheet)(workbook.Sheets[1]);
 
-                int numColumns = columnNames.Count;
+                int numColumns = 0;
+
+                foreach(string[] dataRow in data)
+                {
+                    if (dataRow.Length > numColumns) numColumns = dataRow.Length;
+
+                }
+                                 
                 int numRows = rows.Count;
-                object[,] objCol = new Object[1, numColumns];
-                object[,] objData = new Object[numRows, numColumns];
-               
                 string columnUpper = ConvertNumberToBase26(numColumns);
                 string rangeUpper = columnUpper + (numRows + 1).ToString();
+
+                object[,] objCol = new Object[1, numColumns];
+                object[,] objData = new Object[numRows, numColumns];                
                 
-                for(int c = 0; c < numColumns; c++)
+                for(int c = 0; c < columnNames.Count; c++)
                 {
                     objCol[0, c] = columnNames[c];
                 }
+
                 Range range = worksheet.get_Range("A1", columnUpper + "1");
                 range.Value = objCol;
                 app.Visible = true;
@@ -385,7 +517,7 @@ namespace HSKDICommands
                 {
                     for (int c = 0; c < numColumns; c++)
                     {
-                        objData[r, c] = data[r][c];
+                        if (c < data[r].Length) objData[r, c] = data[r][c];
                     }
                 }
 
@@ -420,16 +552,17 @@ namespace HSKDICommands
     {
         public string layer = null;
         public string entType = null;
-        public double area;
-        public double length;
+        public double? area = null;
+        public double? length = null;
         public List<double> coords = new List<double>();
         public string blkName = null;
         public List<string> attTags = new List<string>();
-        public List<string> attTexts = new List<string>();
+        public List<string> attVals = new List<string>();
         public TypedValue[] xData = null;
         public string txt = null;
+        public string pattern = null;
 
-        public NewTableRow(string layer, string entType, double area, double length, List<double> coords, string blkName, List<string> attTags, List<string> attTexts, string txt, TypedValue[] xData)
+        public NewTableRow(string layer, string entType, double area, double length, List<double> coords, string blkName, List<string> attTags, List<string> attVals, string txt, TypedValue[] xData, string pattern)
         {
             this.entType = entType;
             this.area = area;
@@ -438,9 +571,10 @@ namespace HSKDICommands
             this.layer = layer;
             this.blkName = blkName;
             this.attTags = attTags;
-            this.attTexts = attTexts;
+            this.attVals = attVals;
             this.txt = txt;
             this.xData = xData;
+            this.pattern = pattern;
         }
     }
 }
