@@ -44,317 +44,325 @@ namespace HSKDICommands
 
             using (tr)
             {
-                List<string> layerNames = new List<string>();
+                try
+                {
+                    List<string> layerNames = new List<string>();
 
-                BlockTable bt = (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead);
-                BlockTableRecord ms = (BlockTableRecord)tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForRead);
-                // Create block selector                
-                                
-                PromptEntityOptions peo = new PromptEntityOptions("\nSelect an object on desired Layer or <Filter by Area>.");
-                peo.Keywords.Add("Filter");                
-                peo.SetRejectMessage("\nObject Selection Failed. Select an object on desired Layer.");                
+                    BlockTable bt = (BlockTable)tr.GetObject(db.BlockTableId, OpenMode.ForRead);
+                    BlockTableRecord ms = (BlockTableRecord)tr.GetObject(bt[BlockTableRecord.ModelSpace], OpenMode.ForRead);
+                    // Create block selector                
 
-                PromptSelectionOptions pso = new PromptSelectionOptions();                
-                pso.MessageForAdding = "\nHighlighted Objects will be included. Select individual objects or filtering area limits.";
-                pso.MessageForRemoval = "\nObject removed. Select individual objects or filtering area limits.";
+                    PromptEntityOptions peo = new PromptEntityOptions("\nSelect an object on desired Layer or <Filter by Area>.");
+                    peo.Keywords.Add("Filter");
+                    peo.SetRejectMessage("\nObject Selection Failed. Select an object on desired Layer.");
 
-                //PromptPointOptions ppo = new PromptPointOptions("\nSelect first point in window or <End>. ");
-                //ppo.Keywords.Add("End");
+                    PromptSelectionOptions pso = new PromptSelectionOptions();
+                    pso.MessageForAdding = "\nHighlighted Objects will be included. Select individual objects or filtering area limits.";
+                    pso.MessageForRemoval = "\nObject removed. Select individual objects or filtering area limits.";
 
-                //PromptPointResult ppr = null;
-                
+                    //PromptPointOptions ppo = new PromptPointOptions("\nSelect first point in window or <End>. ");
+                    //ppo.Keywords.Add("End");
 
-                PromptSelectionResult psr = null;                
-                ObjectIdCollection objsInWindow = new ObjectIdCollection();
-                
-                do
-                {                    
-                    per = ed.GetEntity(peo);
-                    psr = null;
+                    //PromptPointResult ppr = null;
 
-                    if (per.Status == PromptStatus.Keyword && per.StringResult == "Filter")
+
+                    PromptSelectionResult psr = null;
+                    ObjectIdCollection objsInWindow = new ObjectIdCollection();
+
+                    do
                     {
-                        peo.Message = "\nSelect an object on next desired Layer or press <Enter> when done.";
-                        peo.Keywords.Clear();
-                        //Point3dCollection pts = new Point3dCollection();
+                        per = ed.GetEntity(peo);
+                        psr = null;
 
-                        //do
-                        //{
-                        //    ppr = ed.GetPoint(ppo);
-                        //    pts.Add(ppr.Value);
-                        //    ppo.BasePoint = pts[pts.Count - 1];
-                        //    ppo.UseDashedLine = true;
-                        //    ppo.UseBasePoint = true;
-
-                        //    ppo.Message = "\nSelect Next point.";
-                        //    if (pts.Count >= 2) ppo.Message = "\nSelect Next point or <End> to close selection area.";
-                        
-                        //    if (ppr.Status == PromptStatus.OK)
-                        //    {
-                        //        pts.Add(ppr.Value);
-                        //    }
-
-                        //    if (ppr.Status == PromptStatus.Keyword)
-                        //    {
-                        //        break;
-                        //    }
-                            
-                        //} while (ppr.Status == PromptStatus.OK && pts.Count < 3);
-
-                        //if (pts.Contains(new Point3d(0, 0, 0))) pts.Remove(new Point3d(0, 0, 0));
-
-                        //psr = ed.SelectWindow(pts[0], pts[3]);
-                        psr = ed.GetSelection(pso);
-                        SelectionSet selSet = psr.Value;                        
-
-                        foreach (SelectedObject sel in selSet)
+                        if (per.Status == PromptStatus.Keyword && per.StringResult == "Filter")
                         {
-                            objsInWindow.Add(sel.ObjectId);
-                        }
-                        ed.WriteMessage("\nFilter Added.");                        
-                    }
+                            peo.Message = "\nSelect an object on next desired Layer or press <Enter> when done.";
+                            peo.Keywords.Clear();
+                            //Point3dCollection pts = new Point3dCollection();
 
-                    if (per.Status == PromptStatus.OK && per.ObjectId != null)
-                    {
-                        peo.Message = "\nSelect an object on next desired Layer or press <Enter> when done.";
-                        peo.Keywords.Clear();                        
-                        Entity ent = (Entity)tr.GetObject(per.ObjectId, OpenMode.ForRead);
-                        if (ent.ObjectId != null)
-                        {
-                            string entType = ent.GetType().ToString().Split('.')[ent.GetType().ToString().Split('.').Length - 1];
-                            if (!layerNames.Contains(ent.Layer.ToString())) layerNames.Add(ent.Layer.ToString());
-                            string message = "\n\t" + entType + " added on Layer " + ent.Layer.ToString() 
-                                           + ". Select an object on next desired Layer or press <Enter> when done.";
-                            peo.Message = message;
-                        }
-                    }
-                    
-                } while (per.Status == PromptStatus.OK || psr != null);
+                            //do
+                            //{
+                            //    ppr = ed.GetPoint(ppo);
+                            //    pts.Add(ppr.Value);
+                            //    ppo.BasePoint = pts[pts.Count - 1];
+                            //    ppo.UseDashedLine = true;
+                            //    ppo.UseBasePoint = true;
 
-                ObjectIdCollection entsOnLayers = new ObjectIdCollection();
+                            //    ppo.Message = "\nSelect Next point.";
+                            //    if (pts.Count >= 2) ppo.Message = "\nSelect Next point or <End> to close selection area.";
 
-                foreach (string layerName in layerNames)
-                {
-                    ObjectIdCollection entsOnLayer = HSKDICommon.Commands.GetEntitiesOnLayer(layerName);
-                    foreach (ObjectId ent in entsOnLayer)
-                    {
-                        entsOnLayers.Add(ent);
-                    }
-                }
-                ObjectIdCollection entsInAreaOnLayers = new ObjectIdCollection();
+                            //    if (ppr.Status == PromptStatus.OK)
+                            //    {
+                            //        pts.Add(ppr.Value);
+                            //    }
 
-                if (objsInWindow.Count > 0)
-                {
-                    foreach(ObjectId myEnt in entsOnLayers)
-                    {
-                        if (objsInWindow.Contains(myEnt)) entsInAreaOnLayers.Add(myEnt);
-                    }
-                    entsOnLayers = entsInAreaOnLayers;
-                }
+                            //    if (ppr.Status == PromptStatus.Keyword)
+                            //    {
+                            //        break;
+                            //    }
 
-                List<NewTableRow> tableRows = new List<NewTableRow>();
-                foreach (ObjectId objID in entsOnLayers)
-                {
-                    Entity ent = (Entity)tr.GetObject(objID, OpenMode.ForRead);
-                    string entType = ent.GetType().ToString().Split('.')[ent.GetType().ToString().Split('.').Length - 1];
-                    double area = 0;
-                    double length = 0;
-                    string layer = null;
-                    string blkName = null;
-                    List<string> attTags = new List<string>();
-                    List<string> attTexts = new List<string>();
-                    TypedValue[] xData = null;
-                    List<double> coords = new List<double>();
-                    string txt = null;
-                    string pattern = null;
+                            //} while (ppr.Status == PromptStatus.OK && pts.Count < 3);
 
-                    switch (entType)
-                    {
-                        case "Polyline":
-                            Polyline pl = ent as Polyline;
-                            area = pl.Area;
-                            length = pl.Length;
-                            layer = pl.Layer.ToString();
-                            //xData = pl.XData.AsArray();
-                            break;
-                        case "Line":
-                            Autodesk.AutoCAD.DatabaseServices.Line l = ent as Autodesk.AutoCAD.DatabaseServices.Line;
-                            length = l.Length;
-                            layer = l.Layer.ToString();
-                            //xData = l.XData.AsArray();
-                            break;
-                        case "Circle":
-                            Autodesk.AutoCAD.DatabaseServices.Circle c = ent as Autodesk.AutoCAD.DatabaseServices.Circle;
-                            length = c.Circumference;
-                            area = c.Area;
-                            layer = c.Layer.ToString();
-                            //xData = l.XData.AsArray();
-                            break;
-                        case "Ellipse":
-                            Autodesk.AutoCAD.DatabaseServices.Ellipse e = ent as Autodesk.AutoCAD.DatabaseServices.Ellipse;                            
-                            area = e.Area;                            
-                            layer = e.Layer.ToString();
-                            //xData = l.XData.AsArray();
-                            break;
-                        case "Hatch":
-                            Autodesk.AutoCAD.DatabaseServices.Hatch h = ent as Autodesk.AutoCAD.DatabaseServices.Hatch;
-                            area = h.Area;
-                            layer = h.Layer.ToString();
-                            pattern = h.PatternName;
-                            //xData = l.XData.AsArray();
-                            break;
-                        case "BlockReference":
-                            BlockReference br = ent as BlockReference;
-                            BlockTableRecord btr = (BlockTableRecord)tr.GetObject(br.BlockTableRecord, OpenMode.ForRead);
-                            blkName = btr.Name;
-                            layer = br.Layer.ToString();
-                            coords.Add(Math.Round(br.Position.X));
-                            coords.Add(Math.Round(br.Position.Y));
-                            coords.Add(Math.Round(br.Position.Z));
-                            //xData = br.XData.AsArray();
-                            foreach (ObjectId attId in br.AttributeCollection)
+                            //if (pts.Contains(new Point3d(0, 0, 0))) pts.Remove(new Point3d(0, 0, 0));
+
+                            //psr = ed.SelectWindow(pts[0], pts[3]);
+                            psr = ed.GetSelection(pso);
+                            SelectionSet selSet = psr.Value;
+
+                            foreach (SelectedObject sel in selSet)
                             {
-                                Entity att = (Entity)tr.GetObject(attId, OpenMode.ForRead);
+                                objsInWindow.Add(sel.ObjectId);
+                            }
+                            ed.WriteMessage("\nFilter Added.");
+                        }
 
-                                if (att is AttributeReference)
+                        if (per.Status == PromptStatus.OK && per.ObjectId != null)
+                        {
+                            peo.Message = "\nSelect an object on next desired Layer or press <Enter> when done.";
+                            peo.Keywords.Clear();
+                            Entity ent = (Entity)tr.GetObject(per.ObjectId, OpenMode.ForRead);
+                            if (ent.ObjectId != null)
+                            {
+                                string entType = ent.GetType().ToString().Split('.')[ent.GetType().ToString().Split('.').Length - 1];
+                                if (!layerNames.Contains(ent.Layer.ToString())) layerNames.Add(ent.Layer.ToString());
+                                string message = "\n\t" + entType + " added on Layer " + ent.Layer.ToString()
+                                               + ". Select an object on next desired Layer or press <Enter> when done.";
+                                peo.Message = message;
+                            }
+                        }
+
+                    } while (per.Status == PromptStatus.OK || psr != null);
+
+                    ObjectIdCollection entsOnLayers = new ObjectIdCollection();
+
+                    foreach (string layerName in layerNames)
+                    {
+                        ObjectIdCollection entsOnLayer = HSKDICommon.Commands.GetEntitiesOnLayer(layerName);
+                        foreach (ObjectId ent in entsOnLayer)
+                        {
+                            entsOnLayers.Add(ent);
+                        }
+                    }
+                    ObjectIdCollection entsInAreaOnLayers = new ObjectIdCollection();
+
+                    if (objsInWindow.Count > 0)
+                    {
+                        foreach (ObjectId myEnt in entsOnLayers)
+                        {
+                            if (objsInWindow.Contains(myEnt)) entsInAreaOnLayers.Add(myEnt);
+                        }
+                        entsOnLayers = entsInAreaOnLayers;
+                    }
+
+                    List<NewTableRow> tableRows = new List<NewTableRow>();
+                    foreach (ObjectId objID in entsOnLayers)
+                    {
+                        Entity ent = (Entity)tr.GetObject(objID, OpenMode.ForRead);
+                        string entType = ent.GetType().ToString().Split('.')[ent.GetType().ToString().Split('.').Length - 1];
+                        double area = 0;
+                        double length = 0;
+                        string layer = null;
+                        string blkName = null;
+                        List<string> attTags = new List<string>();
+                        List<string> attTexts = new List<string>();
+                        TypedValue[] xData = null;
+                        List<double> coords = new List<double>();
+                        string txt = null;
+                        string pattern = null;
+
+                        switch (entType)
+                        {
+                            case "Polyline":
+                                Polyline pl = ent as Polyline;
+                                area = pl.Area;
+                                length = pl.Length;
+                                layer = pl.Layer.ToString();
+                                //xData = pl.XData.AsArray();
+                                break;
+                            case "Line":
+                                Autodesk.AutoCAD.DatabaseServices.Line l = ent as Autodesk.AutoCAD.DatabaseServices.Line;
+                                length = l.Length;
+                                layer = l.Layer.ToString();
+                                //xData = l.XData.AsArray();
+                                break;
+                            case "Circle":
+                                Autodesk.AutoCAD.DatabaseServices.Circle c = ent as Autodesk.AutoCAD.DatabaseServices.Circle;
+                                length = c.Circumference;
+                                area = c.Area;
+                                layer = c.Layer.ToString();
+                                //xData = l.XData.AsArray();
+                                break;
+                            case "Ellipse":
+                                Autodesk.AutoCAD.DatabaseServices.Ellipse e = ent as Autodesk.AutoCAD.DatabaseServices.Ellipse;
+                                area = e.Area;
+                                layer = e.Layer.ToString();
+                                //xData = l.XData.AsArray();
+                                break;
+                            case "Hatch":
+                                Autodesk.AutoCAD.DatabaseServices.Hatch h = ent as Autodesk.AutoCAD.DatabaseServices.Hatch;
+                                area = h.Area;
+                                layer = h.Layer.ToString();
+                                pattern = h.PatternName;
+                                //xData = l.XData.AsArray();
+                                break;
+                            case "BlockReference":
+                                BlockReference br = ent as BlockReference;
+                                BlockTableRecord btr = (BlockTableRecord)tr.GetObject(br.BlockTableRecord, OpenMode.ForRead);
+                                blkName = btr.Name;
+                                layer = br.Layer.ToString();
+                                coords.Add(Math.Round(br.Position.X));
+                                coords.Add(Math.Round(br.Position.Y));
+                                coords.Add(Math.Round(br.Position.Z));
+                                //xData = br.XData.AsArray();
+                                foreach (ObjectId attId in br.AttributeCollection)
                                 {
-                                    AttributeReference ar = (AttributeReference)att;
-                                    attTags.Add(ar.Tag);
-                                    attTexts.Add(ar.TextString);
-                                } // end if
-                            } // end foreach   
-                            break;
-                        case "DBText":
-                            DBText text = ent as DBText;
-                            layer = text.Layer.ToString();
-                            coords.Add(Math.Round(text.Position.X));
-                            coords.Add(Math.Round(text.Position.Y));
-                            coords.Add(Math.Round(text.Position.Z));
-                            txt = text.TextString;
-                            //xData = text.XData.AsArray();
-                            break;
-                        case "MText":
-                            MText mtext = ent as MText;
-                            layer = mtext.Layer.ToString();
-                            coords.Add(Math.Round(mtext.Location.X));
-                            coords.Add(Math.Round(mtext.Location.Y));
-                            coords.Add(Math.Round(mtext.Location.Z));
-                            txt = mtext.Text;
-                            //xData = mtext.XData.AsArray();
-                            break;
-                        case "MLeader":
-                            MLeader ml = ent as MLeader;
-                            layer = ml.Layer.ToString();
-                            //blkName = ml.BlockName;                            
-                            coords.Add(Math.Round(ml.MText.Location.X));
-                            coords.Add(Math.Round(ml.MText.Location.Y));
-                            coords.Add(Math.Round(ml.MText.Location.Z));
-                            txt = ml.MText.Text;
-                            //xData = mtext.XData.AsArray();
-                            break;
-                        default:
-                            //uncatigorized. Send only type & Layer
-                            layer = ent.Layer.ToString();
-                            break;
+                                    Entity att = (Entity)tr.GetObject(attId, OpenMode.ForRead);
+
+                                    if (att is AttributeReference)
+                                    {
+                                        AttributeReference ar = (AttributeReference)att;
+                                        attTags.Add(ar.Tag);
+                                        attTexts.Add(ar.TextString);
+                                    } // end if
+                                } // end foreach   
+                                break;
+                            case "DBText":
+                                DBText text = ent as DBText;
+                                layer = text.Layer.ToString();
+                                coords.Add(Math.Round(text.Position.X));
+                                coords.Add(Math.Round(text.Position.Y));
+                                coords.Add(Math.Round(text.Position.Z));
+                                txt = text.TextString;
+                                //xData = text.XData.AsArray();
+                                break;
+                            case "MText":
+                                MText mtext = ent as MText;
+                                layer = mtext.Layer.ToString();
+                                coords.Add(Math.Round(mtext.Location.X));
+                                coords.Add(Math.Round(mtext.Location.Y));
+                                coords.Add(Math.Round(mtext.Location.Z));
+                                txt = mtext.Text;
+                                //xData = mtext.XData.AsArray();
+                                break;
+                            case "MLeader":
+                                MLeader ml = ent as MLeader;
+                                layer = ml.Layer.ToString();
+                                //blkName = ml.BlockName;                            
+                                coords.Add(Math.Round(ml.MText.Location.X));
+                                coords.Add(Math.Round(ml.MText.Location.Y));
+                                coords.Add(Math.Round(ml.MText.Location.Z));
+                                txt = ml.MText.Text;
+                                //xData = mtext.XData.AsArray();
+                                break;
+                            default:
+                                //uncatigorized. Send only type & Layer
+                                layer = ent.Layer.ToString();
+                                break;
+                        }
+
+                        NewTableRow tableRow = new NewTableRow(layer, entType, area, length, coords, blkName, attTags, attTexts, txt, xData, pattern);
+                        int i;
+                        switch (entType)
+                        {
+                            case "Polyline":
+                                i = tableRows.FindIndex(delegate(NewTableRow t)
+                                        {
+                                            return t.layer == ent.Layer && t.entType == "Polyline";
+                                        });
+                                if (i == -1)
+                                {
+                                    tableRows.Add(tableRow);
+                                }
+                                else
+                                {
+                                    if (tableRow.area > 0) tableRows[i].area += tableRow.area;
+                                    if (tableRow.length > 0) tableRows[i].length += tableRow.length;
+                                }
+                                break;
+                            case "Line":
+                                i = tableRows.FindIndex(delegate(NewTableRow t)
+                                {
+                                    return t.layer == ent.Layer && t.entType == "Line";
+                                });
+                                if (i == -1)
+                                {
+                                    tableRows.Add(tableRow);
+                                }
+                                else
+                                {
+                                    if (tableRow.length > 0) tableRows[i].length += tableRow.length;
+                                }
+                                break;
+                            case "Circle":
+                                i = tableRows.FindIndex(delegate(NewTableRow t)
+                                {
+                                    return t.layer == ent.Layer && t.entType == "Circle";
+                                });
+                                if (i == -1)
+                                {
+                                    tableRows.Add(tableRow);
+                                }
+                                else
+                                {
+                                    if (tableRow.area > 0) tableRows[i].area += tableRow.area;
+                                    if (tableRow.length > 0) tableRows[i].length += tableRow.length;
+                                }
+                                break;
+                            case "Ellipse":
+                                i = tableRows.FindIndex(delegate(NewTableRow t)
+                                {
+                                    return t.layer == ent.Layer && t.entType == "Ellipse";
+                                });
+                                if (i == -1)
+                                {
+                                    tableRows.Add(tableRow);
+                                }
+                                else
+                                {
+                                    if (tableRow.area > 0) tableRows[i].area += tableRow.area;
+                                }
+                                break;
+                            case "Hatch":
+                                i = tableRows.FindIndex(delegate(NewTableRow t)
+                                {
+                                    return t.layer == ent.Layer && t.entType == "Hatch" && t.pattern == pattern;
+                                });
+                                if (i == -1)
+                                {
+                                    tableRows.Add(tableRow);
+                                }
+                                else
+                                {
+                                    if (tableRow.area > 0) tableRows[i].area += tableRow.area;
+                                }
+                                break;
+                            case "BlockReference":
+                                tableRows.Add(tableRow);
+                                break;
+                            case "DBText":
+                                tableRows.Add(tableRow);
+                                break;
+                            case "MText":
+                                tableRows.Add(tableRow);
+                                break;
+                            case "MLeader":
+                                tableRows.Add(tableRow);
+                                break;
+                            default:
+                                break;
+                        }
                     }
 
-                    NewTableRow tableRow = new NewTableRow(layer, entType, area, length, coords, blkName, attTags, attTexts, txt, xData, pattern);
-                    int i;
-                    switch (entType)
+                    if (entsOnLayers.Count > 0)
                     {
-                        case "Polyline":
-                            i = tableRows.FindIndex(delegate(NewTableRow t)
-                                    {
-                                        return t.layer == ent.Layer && t.entType == "Polyline";
-                                    });
-                            if (i == -1)
-                            {
-                                tableRows.Add(tableRow);
-                            }
-                            else
-                            {                                
-                                if (tableRow.area > 0) tableRows[i].area += tableRow.area;
-                                if (tableRow.length > 0) tableRows[i].length += tableRow.length;
-                            }
-                            break;
-                        case "Line":
-                            i = tableRows.FindIndex(delegate(NewTableRow t)
-                            {
-                                return t.layer == ent.Layer && t.entType == "Line";
-                            });
-                            if (i == -1)
-                            {
-                                tableRows.Add(tableRow);
-                            }
-                            else
-                            {
-                                if (tableRow.length > 0) tableRows[i].length += tableRow.length;
-                            }
-                            break;
-                        case "Circle":
-                            i = tableRows.FindIndex(delegate(NewTableRow t)
-                            {
-                                return t.layer == ent.Layer && t.entType == "Circle";
-                            });
-                            if (i == -1)
-                            {
-                                tableRows.Add(tableRow);
-                            }
-                            else
-                            {
-                                if (tableRow.area > 0) tableRows[i].area += tableRow.area;
-                                if (tableRow.length > 0) tableRows[i].length += tableRow.length;
-                            }
-                            break;
-                        case "Ellipse":
-                            i = tableRows.FindIndex(delegate(NewTableRow t)
-                            {
-                                return t.layer == ent.Layer && t.entType == "Ellipse";
-                            });
-                            if (i == -1)
-                            {
-                                tableRows.Add(tableRow);
-                            }
-                            else
-                            {
-                                if (tableRow.area > 0) tableRows[i].area += tableRow.area;                                
-                            }
-                            break;
-                        case "Hatch":
-                            i = tableRows.FindIndex(delegate(NewTableRow t)
-                            {
-                                return t.layer == ent.Layer && t.entType == "Hatch" && t.pattern == pattern;
-                            });
-                            if (i == -1)
-                            {
-                                tableRows.Add(tableRow);
-                            }
-                            else
-                            {
-                                if (tableRow.area > 0) tableRows[i].area += tableRow.area;                                
-                            }
-                            break;
-                        case "BlockReference":
-                            tableRows.Add(tableRow);
-                            break;
-                        case "DBText":
-                            tableRows.Add(tableRow);
-                            break;
-                        case "MText":
-                            tableRows.Add(tableRow);
-                            break;
-                        case "MLeader":
-                            tableRows.Add(tableRow);
-                            break;
-                        default:
-                            break;
+                        // now that we have all the table rows, export them
+                        ExportSpreadsheet(tableRows);
                     }
                 }
-
-                if (entsOnLayers.Count > 0)
+                catch
                 {
-                    // now that we have all the table rows, export them
-                    ExportSpreadsheet(tableRows);
+                    tr.Abort();
+                    tr.Dispose();
                 }
             }
         }
