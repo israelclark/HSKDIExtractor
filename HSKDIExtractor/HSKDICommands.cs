@@ -137,7 +137,7 @@ namespace HSKDICommands
 
                     foreach (string layerName in layerNames)
                     {
-                        ObjectIdCollection entsOnLayer = HSKDICommon.Commands.GetEntitiesOnLayer(layerName);
+                        ObjectIdCollection entsOnLayer = HSKDICommon.Commands.GetAllEntitiesOnLayer(layerName);
                         foreach (ObjectId ent in entsOnLayer)
                         {
                             entsOnLayers.Add(ent);
