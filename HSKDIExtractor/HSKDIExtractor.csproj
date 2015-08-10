@@ -99,8 +99,7 @@
     <!--AME Referebces Begin-->
     <!--AME Reference End-->
     <Reference Include="HSKDICommon">
-      <HintPath>..\..\HSKDICommon\HSKDICommon\bin\Release\HSKDICommon.dll</HintPath>
-      <Private>False</Private>
+      <HintPath>..\..\..\..\..\..\ProgramData\Autodesk\ApplicationPlugins\HSKDICommon.bundle\Contents\HSKDICommon.dll</HintPath>
     </Reference>
     <Reference Include="Microsoft.CSharp" />
     <Reference Include="System" />
