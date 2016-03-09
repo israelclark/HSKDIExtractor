@@ -200,7 +200,7 @@ namespace HSKDICommands
                                 break;
                             case "Hatch":
                                 Autodesk.AutoCAD.DatabaseServices.Hatch h = ent as Autodesk.AutoCAD.DatabaseServices.Hatch;
-                                area = h.Area;
+                                area = h.Area;                                
                                 layer = h.Layer.ToString();
                                 pattern = h.PatternName;
                                 //xData = l.XData.AsArray();
@@ -402,10 +402,10 @@ namespace HSKDICommands
                 {
                     columnNames.Add("Length(s)");
                 }
-                if (rows.Exists(delegate(NewTableRow row) { return row.coords != null ? true : false; }))
-                {
-                    columnNames.Add("Coordinates");
-                }
+                //if (rows.Exists(delegate(NewTableRow row) { return row.coords != null ? true : false; }))
+                //{
+                //    columnNames.Add("Coordinates");
+                //}
                 if (rows.Exists(delegate(NewTableRow row) { return row.txt != null ? true : false; }))
                 {
                     columnNames.Add("Text");
@@ -447,16 +447,16 @@ namespace HSKDICommands
                             row.Add("");
                     }
 
-                    if (columnNames.Contains("Coordinates"))
-                    {
-                        if (rows[i].coords.Count > 0)
-                            row.Add("("
-                                + rows[i].coords[0].ToString() + ", "
-                                + rows[i].coords[1].ToString() + ", "
-                                + rows[i].coords[2].ToString() + ")");
-                        else
-                            row.Add("");
-                    }
+                    //if (columnNames.Contains("Coordinates"))
+                    //{
+                    //    if (rows[i].coords.Count > 0)
+                    //        row.Add("("
+                    //            + rows[i].coords[0].ToString() + ", "
+                    //            + rows[i].coords[1].ToString() + ", "
+                    //            + rows[i].coords[2].ToString() + ")");
+                    //    else
+                    //        row.Add("");
+                    //}
 
                     if (columnNames.Contains("Text"))
                     {
