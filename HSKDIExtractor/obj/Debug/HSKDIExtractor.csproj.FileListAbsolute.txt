@@ -12,7 +12,3 @@ C:\Users\israelc\Dropbox\Programming Projects\HSKDIExtractor\HSKDIExtractor\obj\
 C:\Users\israelc\Dropbox\Programming Projects\HSKDIExtractor\HSKDIExtractor\bin\Debug\HSKDIExtractor.dll
 C:\Users\israelc\Dropbox\Programming Projects\HSKDIExtractor\HSKDIExtractor\bin\Debug\HSKDIExtractor.pdb
 C:\Users\israelc\Dropbox\Programming Projects\HSKDIExtractor\HSKDIExtractor\obj\Debug\HSKDIExtractor.pdb
-C:\Users\israelc\Dropbox\Programming Projects\HSKDIExtractor\HSKDIExtractor\bin\Debug\accoremgd.dll
-C:\Users\israelc\Dropbox\Programming Projects\HSKDIExtractor\HSKDIExtractor\bin\Debug\acdbmgd.dll
-C:\Users\israelc\Dropbox\Programming Projects\HSKDIExtractor\HSKDIExtractor\bin\Debug\acmgd.dll
-C:\Users\israelc\Dropbox\Programming Projects\HSKDIExtractor\HSKDIExtractor\bin\Debug\en-US\acdbmgd.resources.dll

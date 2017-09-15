@@ -56,9 +56,11 @@ namespace HSKDICommands
                     peo.Keywords.Add("Filter");
                     peo.SetRejectMessage("\nObject Selection Failed. Select an object on desired Layer.");
 
-                    PromptSelectionOptions pso = new PromptSelectionOptions();
-                    pso.MessageForAdding = "\nHighlighted Objects will be included. Select individual objects or filtering area limits.";
-                    pso.MessageForRemoval = "\nObject removed. Select individual objects or filtering area limits.";
+                    PromptSelectionOptions pso = new PromptSelectionOptions()
+                    {
+                        MessageForAdding = "\nHighlighted Objects will be included. Select individual objects or filtering area limits.",
+                        MessageForRemoval = "\nObject removed. Select individual objects or filtering area limits."
+                    };
 
                     //PromptPointOptions ppo = new PromptPointOptions("\nSelect first point in window or <End>. ");
                     //ppo.Keywords.Add("End");
@@ -175,19 +177,19 @@ namespace HSKDICommands
                             case "Polyline":
                                 Polyline pl = ent as Polyline;
                                 area = pl.Area;
-                                length = pl.Length;
-                                layer = pl.Layer.ToString();
+                                length += pl.Length;
+                                layer = pl.Layer.ToString();   
                                 //xData = pl.XData.AsArray();
                                 break;
                             case "Line":
                                 Autodesk.AutoCAD.DatabaseServices.Line l = ent as Autodesk.AutoCAD.DatabaseServices.Line;
-                                length = l.Length;
-                                layer = l.Layer.ToString();
+                                length += l.Length;
+                                layer = l.Layer.ToString();                                
                                 //xData = l.XData.AsArray();
                                 break;
                             case "Circle":
                                 Autodesk.AutoCAD.DatabaseServices.Circle c = ent as Autodesk.AutoCAD.DatabaseServices.Circle;
-                                length = c.Circumference;
+                                length += c.Circumference;
                                 area = c.Area;
                                 layer = c.Layer.ToString();
                                 //xData = l.XData.AsArray();
@@ -218,9 +220,8 @@ namespace HSKDICommands
                                 {
                                     Entity att = (Entity)tr.GetObject(attId, OpenMode.ForRead);
 
-                                    if (att is AttributeReference)
+                                    if (att is AttributeReference ar)
                                     {
-                                        AttributeReference ar = (AttributeReference)att;
                                         attTags.Add(ar.Tag);
                                         attTexts.Add(ar.TextString);
                                     } // end if
@@ -276,7 +277,7 @@ namespace HSKDICommands
                                 else
                                 {
                                     if (tableRow.area > 0) tableRows[i].area += tableRow.area;
-                                    if (tableRow.length > 0) tableRows[i].length += tableRow.length;
+                                    if (tableRow.length > 0) tableRows[i].length += tableRow.length;                                    
                                 }
                                 break;
                             case "Line":
@@ -305,7 +306,6 @@ namespace HSKDICommands
                                 else
                                 {
                                     if (tableRow.area > 0) tableRows[i].area += tableRow.area;
-                                    if (tableRow.length > 0) tableRows[i].length += tableRow.length;
                                 }
                                 break;
                             case "Ellipse":
@@ -390,10 +390,12 @@ namespace HSKDICommands
             Thread.CurrentThread.CurrentCulture = CultureInfo.CreateSpecificCulture("en-US");
             //<-- change culture on whatever you need
             try
-            {                   
-                List<string> columnNames = new List<string>();                                           
-                columnNames.Add("Layer");                
-                columnNames.Add("Entity Type");
+            {
+                List<string> columnNames = new List<string>
+                {
+                    "Layer",
+                    "Entity Type"
+                };
                 if (rows.Exists(delegate(NewTableRow row) { return row.area > 0 ? true : false; }))
                 {                    
                     columnNames.Add("Area(s)");
@@ -401,11 +403,7 @@ namespace HSKDICommands
                 if (rows.Exists(delegate(NewTableRow row) { return row.length > 0 ? true : false; }))
                 {
                     columnNames.Add("Length(s)");
-                }
-                //if (rows.Exists(delegate(NewTableRow row) { return row.coords != null ? true : false; }))
-                //{
-                //    columnNames.Add("Coordinates");
-                //}
+                }                
                 if (rows.Exists(delegate(NewTableRow row) { return row.txt != null ? true : false; }))
                 {
                     columnNames.Add("Text");
@@ -413,6 +411,12 @@ namespace HSKDICommands
                 if (rows.Exists(delegate(NewTableRow row) { return row.pattern != null ? true : false; }))
                 {
                     columnNames.Add("Pattern");
+                }
+                if (rows.Exists(delegate (NewTableRow row) { return row.coords.Count != 0 ? true : false; }))
+                {
+                    columnNames.Add("X");
+                    columnNames.Add("Y");
+                    columnNames.Add("Z");
                 }
                 if (rows.Exists(delegate(NewTableRow row) { return row.blkName != null ? true : false; }))
                 {
@@ -423,17 +427,20 @@ namespace HSKDICommands
                     }
                 }
                 
+
                 string[][] data = new string[rows.Count][];
 
                 int i;
                 for (i = 0; i < rows.Count; i++)
                 {
-                    List<string> row = new List<string>();
-                    row.Add(rows[i].layer);
-                    row.Add(rows[i].entType);
+                    List<string> row = new List<string>
+                    {
+                        rows[i].layer,
+                        rows[i].entType
+                    };
                     if (columnNames.Contains("Area(s)"))
                     {
-                        if (rows[i].area.HasValue)                        
+                        if (rows[i].area > 0)                        
                             row.Add(Math.Round((decimal)rows[i].area, 2).ToString());
                         else
                             row.Add("");
@@ -441,22 +448,11 @@ namespace HSKDICommands
 
                     if (columnNames.Contains("Length(s)"))
                     {
-                        if (rows[i].length != null)
+                        if (rows[i].length > 0)
                             row.Add(Math.Round((decimal)rows[i].length, 2).ToString());
                         else
                             row.Add("");
                     }
-
-                    //if (columnNames.Contains("Coordinates"))
-                    //{
-                    //    if (rows[i].coords.Count > 0)
-                    //        row.Add("("
-                    //            + rows[i].coords[0].ToString() + ", "
-                    //            + rows[i].coords[1].ToString() + ", "
-                    //            + rows[i].coords[2].ToString() + ")");
-                    //    else
-                    //        row.Add("");
-                    //}
 
                     if (columnNames.Contains("Text"))
                     {
@@ -472,7 +468,19 @@ namespace HSKDICommands
                             row.Add(rows[i].pattern);
                         else
                             row.Add("");
-                    }                    
+                    }
+
+                    if (columnNames.Contains("X"))
+                    {
+                        if (rows[i].coords.Count > 0)
+                        {
+                            row.Add(rows[i].coords[0].ToString());
+                            row.Add(rows[i].coords[1].ToString());
+                            row.Add(rows[i].coords[2].ToString());
+                        }
+                        else
+                            row.Add("");
+                    }
 
                     if (columnNames.Contains("Block Name"))
                     {
@@ -488,14 +496,14 @@ namespace HSKDICommands
                         else
                             row.Add("");
                     }                    
-                    
+
                     data[i] = row.ToArray();
                 }
 
                 Excel.Application app = new Excel.Application();                
-                Excel.Workbooks workbooks = (Excel.Workbooks)app.Workbooks;                
-                Excel.Workbook workbook = (Excel.Workbook)(workbooks.Add(1));
-                Excel.Worksheet worksheet = (Excel.Worksheet)(workbook.Sheets[1]);
+                Excel.Workbooks workbooks = app.Workbooks;                
+                Excel.Workbook workbook = workbooks.Add(1);
+                Excel.Worksheet worksheet = (Worksheet)(workbook.Sheets[1]);
 
                 int numColumns = 0;
 
@@ -531,6 +539,7 @@ namespace HSKDICommands
 
                 range = worksheet.get_Range("A2",rangeUpper);                
                 range.Value = objData;
+                worksheet.Columns.AutoFit();
             }
             catch (System.Exception ex)
             {
